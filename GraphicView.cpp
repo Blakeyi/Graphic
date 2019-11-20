@@ -68,6 +68,7 @@ BEGIN_MESSAGE_MAP(CGraphicView, CView)
 	ON_COMMAND(ID_FILE_OPEN, &CGraphicView::OnFileOpen)
 	ON_WM_MOUSEHWHEEL()
 	ON_WM_MOUSEWHEEL()
+	ON_WM_DROPFILES()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -135,7 +136,7 @@ void CGraphicView::OnDraw(CDC* pDC)
 		return;
 
 	// TODO: 在此处为本机数据添加绘制代码
-	if (!image.IsNull())
+	if (!image.IsNull()&&image!=imagePre)
 	{
 		//image.Draw(pDC->GetSafeHdc(), 0, 0);
 		//矩形对象rectControl：客户区的矩形区域
@@ -145,7 +146,7 @@ void CGraphicView::OnDraw(CDC* pDC)
 
 		//每次显示前先将原来的界面刷新称白色
 		CBrush br(0xffffff);//刷成白色（255,255,255）
-		pDC->FillRect(rectClient, &br);
+		//pDC->FillRect(rectClient, &br);
 
 		//获取图片的宽、高
 		double dWidthOrigin = image.GetWidth();
@@ -193,8 +194,23 @@ void CGraphicView::OnDraw(CDC* pDC)
 		DWORD dwROP = SRCCOPY;
 		//缩放操作
 		pDC->SetStretchBltMode(COLORONCOLOR);
-		image.StretchBlt(pDC->GetSafeHdc(), xDest, yDest, nDestWidth, dHeightStrectch, xSrc, ySrc, nSrcWidth, nSrcHeight, dwROP);
+		image.StretchBlt(pDC->GetSafeHdc(), xDest, yDest, nDestWidth, dHeightStrectch, xSrc, ySrc, nSrcWidth, nSrcHeight, SRCCOPY);
 		//image.Draw(pDC->GetSafeHdc(), 0, 0);
+		
+		//CClientDC dc(this);
+		//CBitmap bitmap;//一定要有画布，没有画布玩不转的
+		//CDC MemDC;
+		//bitmap.CreateCompatibleBitmap(&dc, rectClient.Width(), rectClient.Height());
+		//MemDC.CreateCompatibleDC(&dc);
+		//MemDC.SelectObject(&bitmap);//选择画布
+		//MemDC.SetStretchBltMode(HALFTONE);//设置拉伸模式
+		//MemDC.FillSolidRect(rectClient, RGB(0, 0, 0));//背景色
+
+		//pDC->SetStretchBltMode(COLORONCOLOR);
+		//image.Draw(MemDC.m_hDC, rectClient);//m_imgData是CImage对象，rect表示绘图的位置
+		//dc.StretchBlt(xDest, yDest, nDestWidth, dHeightStrectch, &MemDC, xSrc, ySrc, nSrcWidth, nSrcHeight, SRCCOPY);
+		////dc.StretchBlt(rectClient.left, rectClient.top, rectClient.Width(), rectClient.Height(), &MemDC, rectClient.left, rectClient.top, rectClient.Width(), rectClient.Height(), SRCCOPY);
+
 	}
 
 	
@@ -323,6 +339,32 @@ void CGraphicView::Dump(CDumpContext& dc) const
 CGraphicDoc* CGraphicView::GetDocument() // non-debug version is inline
 {
 	ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CGraphicDoc)));
+	strPicName = m_pDocument->GetPathName();
+	if (strPicName!="")
+	{
+		if (strPicNamePre != strPicName)//打开另一张图片
+		{
+			if (!image.IsNull())
+			{
+				//加载过，销毁
+				image.Destroy();
+			}
+			imagePre = image;
+			image.Load(m_pDocument->GetPathName());
+			//放大倍数清零
+			m_fMultiple = 0;
+			//原图的宽度
+			m_nWidthSrc = image.GetWidth();
+			//原图的高度
+			m_nHeightSrc = image.GetHeight();
+			//源的原点清零
+			m_OriginSrcPoint = (0, 0);
+			strPicNamePre = strPicName;
+		}
+		
+	}
+	
+	
 	return (CGraphicDoc*)m_pDocument;
 }
 #endif //_DEBUG
@@ -694,6 +736,7 @@ void CGraphicView::OnFileOpen()
 			image.Destroy();
 		}
 		//加载图片
+		imagePre = image;
 		image.Load(cstrLoadPathName);
 		//放大倍数清零
 		m_fMultiple = 0;
@@ -802,9 +845,31 @@ BOOL CGraphicView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		}
 
 		//使当前的窗口无效:让Windows知道这个窗口现在该重新绘制一下了
+		mouseWheelFlag = true;
 		Invalidate();
 
 	}
 
 	return CView::OnMouseWheel(nFlags, zDelta, pt);
+}
+
+
+void CGraphicView::OnDropFiles(HDROP hDropInfo)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	UINT nCount;
+	TCHAR szPath[MAX_PATH];
+
+	nCount = DragQueryFile(hDropInfo, 0xFFFFFFFF, NULL, 0);
+	if (nCount)
+	{
+		for (UINT nIndex = 0; nIndex < nCount; ++nIndex)
+		{
+			DragQueryFile(hDropInfo, nIndex, szPath, _countof(szPath));
+			MessageBox(szPath, _T("WM_DROPFILES"));
+		}
+	}
+
+	DragFinish(hDropInfo);
+	CView::OnDropFiles(hDropInfo);
 }

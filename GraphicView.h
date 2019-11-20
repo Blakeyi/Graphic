@@ -96,6 +96,7 @@ private:
 	CPoint m_ptOrigin ;
 	UINT m_drawType ;
 	CImage image;
+	CImage imagePre;
 	//缩放功能
     //放大的倍数
 	float m_fMultiple;
@@ -114,12 +115,15 @@ private:
 	CString cstrLoadPathName;
 	CString cstrLoadName;
 	CString cstrLoadPath;
-
+	CString strPicName;//图片路径名
+	CString strPicNamePre;
+	bool mouseWheelFlag = false;//true代表滚轮有操作
 
 public:
 	afx_msg void OnFileOpen();
 	//afx_msg void OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg void OnDropFiles(HDROP hDropInfo);
 };
 
 #ifndef _DEBUG  // debug version in GraphicView.cpp

@@ -90,6 +90,12 @@ BOOL CGraphicApp::InitInstance()
 	
 	m_pMainWnd->SetWindowText("简易绘图程序");	//修改标题
 	// The one and only window has been initialized, so show and update it.
+
+	//让程序支持拖放打开功能
+	m_pMainWnd->DragAcceptFiles();
+	EnableShellOpen();
+	RegisterShellFileTypes(TRUE);
+	
 	m_pMainWnd->ShowWindow(SW_SHOW);
 	m_pMainWnd->UpdateWindow();
 
